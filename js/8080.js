@@ -26,7 +26,7 @@ function loadCPU () {
 		// A duplicate array for register pairs for fast access
 		registerPairs : new Uint16Array(4),
 		// 5 1-bit flags
-		flags : new Uint8Array(5);
+		flags : new Uint8Array(5),
 		// RAM
 		RAM : new Uint8Array(65536),
 		// Stack for enabling sub-routines with unlimited nesting

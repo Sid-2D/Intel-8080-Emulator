@@ -28,8 +28,6 @@ function loadCPU () {
 		flags : new Uint8Array(5),
 		// RAM
 		RAM : new Uint8Array(65536),
-		// Stack for enabling sub-routines with unlimited nesting
-		Stack : new UintArray(),
 		// Wait - Used for memory sync
 		State : {
 			WAIT: false,
@@ -1686,6 +1684,109 @@ function setOpcodes () {
 	};
 	CPU.Instructions[0xf1] = function () {
 		// POP PSW
+		CPU.registers[A] = CPU.RAM[CPU.registerPairs[SP] + 1];
+		var value = CPU.RAM[CPU.registerPairs[SP]];
+		CPU.flags[CY] = (value & 1);
+		CPU.flags[P] = (value & (1 << 2)) >> 2;
+		CPU.flags[AC] = (value & (1 << 4)) >> 4;
+		CPU.flags[Z] = (value & (1 << 6)) >> 6;
+		CPU.flags[S] = (value & (1 << 7)) >> 7;
+		CPU.registerPairs[SP] += 2;
+	};
+	CPU.Instructions[0xf2] = function () {
+		// JP adr
+		var address = getAddress();
+		if (CPU.flags[S] == 0) {
+			CPU.programCounter = address;
+		}
+	};
+	CPU.Instructions[0xf3] = function () {
+		// DI
+	};
+	CPU.Instructions[0xf4] = function () {
+		// CP adr
+		var address = getAddress();
+		if (CPU.flags[S] == 0) {
+			CPU.RAM[CPU.registerPairs[SP] - 1] = (CPU.programCounter & 0xff00) >> 8;
+			CPU.RAM[CPU.registerPairs[SP] - 2] = CPU.programCounter & 0x00ff;
+			CPU.registerPairs[SP] -= 2;
+			CPU.programCounter = address;
+		}
+	};
+	CPU.Instructions[0xf5] = function () {
+		// PUSH PSW
+		var value = 0x02;
+		value |= CPU.flags[CY];
+		value |= CPU.flags[P] << 2;
+		value |= CPU.flags[AC] << 4;
+		value |= CPU.flags[Z] << 6;
+		value |= CPU.flags[S] << 7;
+		CPU.RAM[CPU.registerPairs[SP] - 2] = value;
+		CPU.RAM[CPU.registerPairs[SP] - 1] = CPU.registers[A];
+		CPU.registerPairs[SP] -= 2;
+	};
+	CPU.Instructions[0xf6] = function () {
+		// ORI D8
+		var value = CPU.RAM[CPU.programCounter++];
+		CPU.flags[AC] = CPU.flags[CY] = 0;
+		CPU.registers[A] = CPU.registers[A] | value;
+		setFlagZ(CPU.registers[A]);
+		setFlagP(CPU.registers[A]);
+		setFlagS(CPU.registers[A]);
+	};
+	CPU.Instructions[0xf7] = function () {
+		// RST 6
+		CPU.RAM[CPU.registerPairs[SP] - 1] = (CPU.programCounter & 0xff00) >> 8;
+		CPU.RAM[CPU.registerPairs[SP] - 2] = CPU.programCounter & 0x00f0;
+		CPU.registerPairs[SP] -= 2;
+		CPU.programCounter = 0x30;
+	};
+	CPU.Instructions[0xf8] = function () {
+		// RM
+		if (CPU.flags[S] == 1) {
+			CPU.programCounter = (CPU.RAM[CPU.registerPairs[SP] + 1] << 8) | CPU.RAM[CPU.registerPairs[SP]];
+			CPU.registerPairs[SP] += 2;
+		}
+	};
+	CPU.Instructions[0xf9] = function () {
+		// SPHL
+		CPU.registerPairs[SP] = CPU.registerPairs[HL];
+	};
+	CPU.Instructions[0xfa] = function () {
+		// JM adr
+		var address = getAddress();
+		if (CPU.flags[S] == 1) {
+			CPU.programCounter = address;
+		}
+	};
+	CPU.Instructions[0xfb] = function () {
+		// EI
+	};
+	CPU.Instructions[0xfc] = function () {
+		// CM adr
+		var address = getAddress();
+		if (CPU.flags[S] == 1) {
+			CPU.RAM[CPU.registerPairs[SP] - 1] = (CPU.programCounter & 0xff00) >> 8;
+			CPU.RAM[CPU.registerPairs[SP] - 2] = (CPU.programCounter & 0x00ff);
+			CPU.registerPairs[SP] -= 2;
+			CPU.programCounter = address;
+		}
+	};
+	CPU.Instructions[0xfe] = function () {
+		// CPI D8
+		var value = CPU.RAM[CPU.programCounter++];
+		if (CPU.registers[A] == value) {
+			CPU.flags[Z] = 1;
+		} else if (CPU.registers[A] < value) {
+			CPU.flags[CY] = 1;
+		}
+	};
+	CPU.Instructions[0xff] = function () {
+		// RST 7
+		CPU.RAM[CPU.registerPairs[SP] - 1] = (CPU.programCounter & 0xff00) >> 8;
+		CPU.RAM[CPU.registerPairs[SP] - 2] = CPU.programCounter & 0x00f0;
+		CPU.registerPairs[SP] -= 2;
+		CPU.programCounter = 0x38;
 	};
 }
 

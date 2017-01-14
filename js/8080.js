@@ -1,3 +1,4 @@
+"use strict";
 var CPU;
 
 function initCPU () {
@@ -30,9 +31,10 @@ function loadCPU () {
 		RAM : new Uint8Array(65536),
 		// Wait - Used for memory sync
 		State : {
-			WAIT: false,
-			HLDA: false,
-			HLTA: false
+			WAIT : false,
+			HLDA : false,
+			HLTA : false,
+			INTE : false
 		},
 		// OpCodes
 		Instructions : new Array(256)
@@ -705,6 +707,10 @@ function setOpcodes () {
 		var M = CPU.registerPairs[HL];
 		CPU.RAM[M] = CPU.registers[L];
 	};
+	CPU.Instructions[0x76] = function () {
+		// HLT
+		CPU.State[HLTA] = true;
+	};
 	CPU.Instructions[0x77] = function () {
 		// MOV M, A
 		var M = CPU.registerPairs[HL];
@@ -1356,14 +1362,14 @@ function setOpcodes () {
 	CPU.Instructions[0xc2] = function () {
 		// JNZ adr
 		var address = getAddress();
-		if (!CPU.flags[Z]) {
-			CPU.programCounter = CPU.RAM[address];
+		if (CPU.flags[Z]) {
+			CPU.programCounter = address;
 		}
 	};
 	CPU.Instructions[0xc3] = function () {
 		// JMP adr
 		var address = getAddress();
-		CPU.programCounter = CPU.RAM[address];
+		CPU.programCounter = address;
 	};
 	CPU.Instructions[0xc4] = function () {
 		// CNZ adr
@@ -1477,6 +1483,8 @@ function setOpcodes () {
 	};
 	CPU.Instructions[0xd3] = function () {
 		// OUT D8
+		var port = CPU.RAM[CPU.programCounter++];
+		document.getElementById('Display').innerHTML += String.fromCharCode(CPU.registers[A]);
 	};
 	CPU.Instructions[0xd4] = function () {
 		// CNC adr
@@ -1702,6 +1710,7 @@ function setOpcodes () {
 	};
 	CPU.Instructions[0xf3] = function () {
 		// DI
+		CPU.State[INTE] = false;
 	};
 	CPU.Instructions[0xf4] = function () {
 		// CP adr
@@ -1761,6 +1770,7 @@ function setOpcodes () {
 	};
 	CPU.Instructions[0xfb] = function () {
 		// EI
+		CPU.State[INTE] = true;
 	};
 	CPU.Instructions[0xfc] = function () {
 		// CM adr
@@ -1807,7 +1817,7 @@ function syncRegisterWithPair (r, p) {
 
 function setFlagZ (result) {
 	if (result == 0) {
-		return CPU.flag[Z] = 1;
+		return CPU.flags[Z] = 1;
 	}
 	CPU.flags[Z] = 0;
 }
@@ -1886,6 +1896,6 @@ function wait () {
 function processOpcode () {
 	// FETCH
 	var opcode = CPU.RAM[CPU.programCounter++];
-	console.log("Processing OpCode: " + opcode.toString(16));
+	// console.log("Processing OpCode: " + opcode.toString(16));
 	CPU.Instructions[opcode]();
 }

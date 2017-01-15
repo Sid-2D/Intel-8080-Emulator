@@ -48,15 +48,13 @@ function resetCPU () {
 
 function loadProgram () {
 	var xhr = new XMLHttpRequest;
-	xhr.open("GET", "ROM/DEBUG", true);
+	xhr.open("GET", "ROM/HELLOWORLD", true);
 	xhr.responseType = "arraybuffer";
 	xhr.onload = function () {
 		var program = new Uint8Array(xhr.response);
-		// console.log(program);
 		for (var i = 0; i < program.length; i++) {
 			CPU.RAM[i] = program[i];
 		}
-		// console.log(CPU.RAM);
 		start();
 	};
 	xhr.send();
@@ -65,7 +63,7 @@ function loadProgram () {
 function start () {
 	requestAnimationFrame(function update() {
 		processOpcode();
-		if (!CPU.State.WAIT) {
+		if (!CPU.State.HLTA) {
 			requestAnimationFrame(update);
 		} 
 	});
@@ -709,7 +707,7 @@ function setOpcodes () {
 	};
 	CPU.Instructions[0x76] = function () {
 		// HLT
-		CPU.State[HLTA] = true;
+		CPU.State.HLTA = true;
 	};
 	CPU.Instructions[0x77] = function () {
 		// MOV M, A
@@ -1484,7 +1482,9 @@ function setOpcodes () {
 	CPU.Instructions[0xd3] = function () {
 		// OUT D8
 		var port = CPU.RAM[CPU.programCounter++];
+		console.log("Sending output to port: " + port);
 		document.getElementById('Display').innerHTML += String.fromCharCode(CPU.registers[A]);
+		invaderOUT(port);
 	};
 	CPU.Instructions[0xd4] = function () {
 		// CNC adr
@@ -1536,6 +1536,9 @@ function setOpcodes () {
 	};
 	CPU.Instructions[0xdb] = function () {
 		// IN D8
+		var port = CPU.RAM[CPU.programCounter++];
+		console.log("Getting input from port: " + port);
+		invaderIN(port);
 	};
 	CPU.Instructions[0xdc] = function () {
 		// CC adr
@@ -1710,7 +1713,7 @@ function setOpcodes () {
 	};
 	CPU.Instructions[0xf3] = function () {
 		// DI
-		CPU.State[INTE] = false;
+		CPU.State.INTE = false;
 	};
 	CPU.Instructions[0xf4] = function () {
 		// CP adr
@@ -1770,7 +1773,7 @@ function setOpcodes () {
 	};
 	CPU.Instructions[0xfb] = function () {
 		// EI
-		CPU.State[INTE] = true;
+		CPU.State.INTE = true;
 	};
 	CPU.Instructions[0xfc] = function () {
 		// CM adr
@@ -1896,6 +1899,6 @@ function wait () {
 function processOpcode () {
 	// FETCH
 	var opcode = CPU.RAM[CPU.programCounter++];
-	// console.log("Processing OpCode: " + opcode.toString(16));
+	console.log("Processing OpCode: " + opcode.toString(16));
 	CPU.Instructions[opcode]();
 }

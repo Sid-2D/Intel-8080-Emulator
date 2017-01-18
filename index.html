@@ -6,6 +6,22 @@
 	<script type = "text/javascript" src = "js/Display.js"></script>
 	<script type = "text/javascript" src = "js/Keyboard.js"></script>
 	<script type = "text/javascript" src = "js/Invader.js"></script>
+	<script id = "vertex" type = "vertex">
+		attribute vec2 vertexPositions;
+		attribute float vertexColor;
+		varying vec4 vColor;
+		void main () {
+			gl_Position = vec4(vertexPositions, 0.0, 1.0);
+			vColor = vec4(vertexColor, vertexColor, vertexColor, 1.0);
+		}
+	</script>
+	<script id = "fragment" type = "fragment">
+		precision mediump float;
+		varying vec4 vColor;
+		void main () {
+			gl_FragColor = vColor;
+		}
+	</script>
 </head>
 <body onload = "initCPU();">
 	<p id = "Display"></p>

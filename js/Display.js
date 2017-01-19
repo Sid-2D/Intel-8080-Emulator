@@ -7,8 +7,8 @@ let gl;
 
 function start () {
 	let canvas = document.getElementById('Display');
-	canvas.width = window.innerWidth * 0.75;
-	aspectRatio = displayWidth / displayHeight;
+	canvas.width = window.innerWidth * 0.50;
+	aspectRatio = displayHeight / displayWidth;
 	canvas.height = canvas.width * aspectRatio;
 	initGL(canvas);
 	initShaders();
@@ -16,6 +16,7 @@ function start () {
 	gl.clearColor(0.0, 0.0, 0.0, 1.0);
 	gl.enable(gl.DEPTH_TEST);
 	gl.enable(gl.CULL_FACE);
+	drawScene();
 }
 
 function initGL (canvas) {
@@ -25,7 +26,21 @@ function initGL (canvas) {
 }
 
 function getShader (id) {
-
+	let shaderScript = document.getElementById(id);
+	let script = shaderScript.textContent;
+	let shader;
+	if (shaderScript.type === "vertexShader") {
+		shader = gl.createShader(gl.VERTEX_SHADER);
+	} else {
+		shader = gl.createShader(gl.FRAGMENT_SHADER);
+	}
+	gl.shaderSource(shader, script);
+	gl.compileShader(shader);
+	if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+		console.log(gl.getShaderInfoLog(shader));
+		return null;
+	}
+	return shader;
 }
 
 let shaderProgram;
@@ -50,23 +65,34 @@ let pixelPositionNumberOfItems = 4 * displayHeight * displayWidth;
 
 // Vertex Color Attribute
 let pixelColorBuffer;
-let pixelColorItemSize = 2;
+let pixelColorItemSize = 1;
 let pixelColorNumberOfItems = 4 * displayHeight * displayWidth;
 
 function initBuffers () {
 	pixelPositionBuffer = gl.createBuffer();
 	pixelColorBuffer = gl.createBuffer();
-	let vertices = new Array();
+	let vertices = new Float32Array(displayHeight * displayWidth * 8), len = 0;
 	let pixelWidth = (1 / displayWidth) * 2;
 	let pixelHeight = (1 / displayHeight) * 2;
-	for (let i = 0; i < displayHeight; i++) {
-		for (let j = 0; j < displayWidth; j++) {
-			vertices = vertices.concat([
-				-1 + pixelWidth + pixelWidth * j, 1 - 0.0 - pixelHeight * i,
-				-1 + 0.0 + pixelWidth * j, 1 - 0.0 - pixelHeight * i,
-				-1 + pixelWidth + pixelWidth * j, 1 - pixelHeight - pixelHeight * i,
-				-1 + 0.0 + pixelWidth * j, 1 - pixelHeight - pixelHeight * i
-			]);
+	let pixelWidthXj, pixelHeightXi;
+	for (let i = 0; i < 224; i++) {
+		pixelHeightXi = pixelHeight * i;
+		for (let j = 0; j < 256; j++) {
+			pixelWidthXj = pixelWidth * j;
+			vertices[len++] = -1 + pixelWidth + pixelWidthXj;
+			vertices[len++] = 1 - pixelHeightXi;
+			vertices[len++] = -1 + pixelWidthXj;
+			vertices[len++] = 1 - pixelHeightXi;
+			vertices[len++] = -1 + pixelWidth + pixelWidthXj;
+			vertices[len++] = 1 - pixelHeight - pixelHeightXi;
+			vertices[len++] = -1 + pixelWidthXj;
+			vertices[len++] = 1 - pixelHeight - pixelHeightXi;
+			// vertices = vertices.concat([
+			// 	-1 + pixelWidth + pixelWidth * j, 1 - 0.0 - pixelHeight * i,
+			// 	-1 + 0.0 + pixelWidth * j, 1 - 0.0 - pixelHeight * i,
+			// 	-1 + pixelWidth + pixelWidth * j, 1 - pixelHeight - pixelHeight * i,
+			// 	-1 + 0.0 + pixelWidth * j, 1 - pixelHeight - pixelHeight * i
+			// ]);
 		}
 	}
 	// Upload Vertex Data
@@ -75,17 +101,17 @@ function initBuffers () {
 	gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, pixelPositionItemSize, gl.FLOAT, false, 0, 0);
 }
 
-let displayBuffer = new Float32Array(displayWidth * displayHeight * 8);
+let displayColorBuffer = new Float32Array(pixelColorNumberOfItems);
 
 // Matrix to decide if a pixel is on or off
 let displayMatrix = new Uint8Array(256 * 224);
 
 function turnPixelOn (position) {
-
+	displayColorBuffer[position] = displayColorBuffer[position + 1] = displayColorBuffer[position + 2] = displayColorBuffer[position + 3] = 1;
 }
 
 function turnPixelOff (position) {
-
+	displayColorBuffer[position] = displayColorBuffer[position + 1] = displayColorBuffer[position + 2] = displayColorBuffer[position + 3] = 0;
 }
 
 function setMatrix () {
@@ -98,9 +124,9 @@ function setMatrix () {
 			ramOffset += j;
 			for (let k = 0; k < 8; k++) {
 				if (CPU.RAM[0x2400 + ramOffset] & (1 << k)) {
-					turnPixelOn(displayMatrix[matrixOffset + k]);
+					turnPixelOn((matrixOffset + k)  * 4);
 				} else {
-					turnPixelOff(displayMatrix[matrixOffset + k]);
+					turnPixelOff((matrixOffset + k) * 4);
 				}
 			}
 		}
@@ -113,7 +139,7 @@ function drawScene () {
 	setMatrix();
 	// Upload Color Data
 	gl.bindBuffer(gl.ARRAY_BUFFER, pixelColorBuffer);
-	gl.bufferData(gl.ARRAY_BUFFER, displayBuffer, gl.STATIC_DRAW);
+	gl.bufferData(gl.ARRAY_BUFFER, displayColorBuffer, gl.STATIC_DRAW);
 	gl.vertexAttribPointer(shaderProgram.vertexColorAttribute, pixelColorItemSize, gl.FLOAT, false, 0, 0);
 	gl.drawArrays(gl.TRIANGLE_STRIP, 0, pixelPositionNumberOfItems);
 }

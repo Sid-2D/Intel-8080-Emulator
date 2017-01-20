@@ -120,8 +120,6 @@ function setMatrix () {
 		matrixOffset = i * displayWidth;
 		ramOffset = i * 32;
 		for (let j = 0; j < 32; j++) {
-			matrixOffset += j + (j * 8);
-			ramOffset += j;
 			for (let k = 0; k < 8; k++) {
 				if (CPU.RAM[0x2400 + ramOffset] & (1 << k)) {
 					turnPixelOn((matrixOffset + k)  * 4);
@@ -129,6 +127,8 @@ function setMatrix () {
 					turnPixelOff((matrixOffset + k) * 4);
 				}
 			}
+			matrixOffset += 9;
+			ramOffset++;
 		}
 	}
 }

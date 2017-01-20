@@ -11,7 +11,10 @@
 		attribute float vertexColor;
 		varying vec4 vColor;
 		void main () {
-			gl_Position = vec4(vertexPositions, 0.0, 1.0);
+			gl_Position.x = vertexPositions.x * 0.0 - vertexPositions.y * 1.0;
+			gl_Position.y = vertexPositions.x * 1.0 + vertexPositions.y * 0.0;
+			gl_Position.z = 0.0;
+			gl_Position.w = 1.0;
 			vColor = vec4(vertexColor, vertexColor, vertexColor, 1.0);
 		}
 	</script>

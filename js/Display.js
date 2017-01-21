@@ -5,7 +5,7 @@ let displayWidth = 256, displayHeight = 224, aspectRatio;
 
 let gl;
 
-function start () {
+function initDisplay () {
 	let canvas = document.getElementById('Display');
 	canvas.width = window.innerWidth * 0.50;
 	aspectRatio = displayHeight / displayWidth;
@@ -16,7 +16,6 @@ function start () {
 	gl.clearColor(0.0, 0.0, 0.0, 1.0);
 	gl.enable(gl.DEPTH_TEST);
 	gl.enable(gl.CULL_FACE);
-	drawScene();
 }
 
 function initGL (canvas) {
@@ -87,12 +86,6 @@ function initBuffers () {
 			vertices[len++] = 1 - pixelHeight - pixelHeightXi;
 			vertices[len++] = -1 + pixelWidthXj;
 			vertices[len++] = 1 - pixelHeight - pixelHeightXi;
-			// vertices = vertices.concat([
-			// 	-1 + pixelWidth + pixelWidth * j, 1 - 0.0 - pixelHeight * i,
-			// 	-1 + 0.0 + pixelWidth * j, 1 - 0.0 - pixelHeight * i,
-			// 	-1 + pixelWidth + pixelWidth * j, 1 - pixelHeight - pixelHeight * i,
-			// 	-1 + 0.0 + pixelWidth * j, 1 - pixelHeight - pixelHeight * i
-			// ]);
 		}
 	}
 	// Upload Vertex Data
@@ -102,9 +95,6 @@ function initBuffers () {
 }
 
 let displayColorBuffer = new Float32Array(pixelColorNumberOfItems);
-
-// Matrix to decide if a pixel is on or off
-let displayMatrix = new Uint8Array(256 * 224);
 
 function turnPixelOn (position) {
 	displayColorBuffer[position] = displayColorBuffer[position + 1] = displayColorBuffer[position + 2] = displayColorBuffer[position + 3] = 1;
@@ -127,7 +117,7 @@ function setMatrix () {
 					turnPixelOff((matrixOffset + k) * 4);
 				}
 			}
-			matrixOffset += 9;
+			matrixOffset += 8;
 			ramOffset++;
 		}
 	}

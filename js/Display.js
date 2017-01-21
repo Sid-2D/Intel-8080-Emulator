@@ -1,12 +1,12 @@
 "use strict";
 
 // According to Space Invaders specification
-let displayWidth = 256, displayHeight = 224, aspectRatio; 
+var displayWidth = 256, displayHeight = 224, aspectRatio; 
 
-let gl;
+var gl;
 
 function initDisplay () {
-	let canvas = document.getElementById('Display');
+	var canvas = document.getElementById('Display');
 	canvas.width = window.innerWidth * 0.50;
 	aspectRatio = displayHeight / displayWidth;
 	canvas.height = canvas.width * aspectRatio;
@@ -16,6 +16,7 @@ function initDisplay () {
 	gl.clearColor(0.0, 0.0, 0.0, 1.0);
 	gl.enable(gl.DEPTH_TEST);
 	gl.enable(gl.CULL_FACE);
+	drawScene();
 }
 
 function initGL (canvas) {
@@ -25,9 +26,9 @@ function initGL (canvas) {
 }
 
 function getShader (id) {
-	let shaderScript = document.getElementById(id);
-	let script = shaderScript.textContent;
-	let shader;
+	var shaderScript = document.getElementById(id);
+	var script = shaderScript.textContent;
+	var shader;
 	if (shaderScript.type === "vertexShader") {
 		shader = gl.createShader(gl.VERTEX_SHADER);
 	} else {
@@ -42,10 +43,10 @@ function getShader (id) {
 	return shader;
 }
 
-let shaderProgram;
+var shaderProgram;
 function initShaders () {
-	let fragmentShader = getShader("fragment");
-	let vertexShader = getShader("vertex");
+	var fragmentShader = getShader("fragment");
+	var vertexShader = getShader("vertex");
 	shaderProgram = gl.createProgram();
 	gl.attachShader(shaderProgram, vertexShader);
 	gl.attachShader(shaderProgram, fragmentShader);
@@ -53,30 +54,30 @@ function initShaders () {
 	gl.useProgram(shaderProgram);
 	shaderProgram.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, "vertexPositions");
 	gl.enableVertexAttribArray(shaderProgram.vertexPositionAttribute);
-	shaderProgram.vertexColorAttribute = gl.getAttribLocation(shaderProgram, "vertexColors");
+	shaderProgram.vertexColorAttribute = gl.getAttribLocation(shaderProgram, "vertexColor");
 	gl.enableVertexAttribArray(shaderProgram.vertexColorAttribute);
 }
 
 // Vertex Position Attribute
-let pixelPositionBuffer;
-let pixelPositionItemSize = 2;
-let pixelPositionNumberOfItems = 4 * displayHeight * displayWidth;
+var pixelPositionBuffer;
+var pixelPositionItemSize = 2;
+var pixelPositionNumberOfItems = 4 * displayHeight * displayWidth;
 
 // Vertex Color Attribute
-let pixelColorBuffer;
-let pixelColorItemSize = 1;
-let pixelColorNumberOfItems = 4 * displayHeight * displayWidth;
+var pixelColorBuffer;
+var pixelColorItemSize = 1;
+var pixelColorNumberOfItems = 4 * displayHeight * displayWidth;
 
 function initBuffers () {
 	pixelPositionBuffer = gl.createBuffer();
 	pixelColorBuffer = gl.createBuffer();
-	let vertices = new Float32Array(displayHeight * displayWidth * 8), len = 0;
-	let pixelWidth = (1 / displayWidth) * 2;
-	let pixelHeight = (1 / displayHeight) * 2;
-	let pixelWidthXj, pixelHeightXi;
-	for (let i = 0; i < 224; i++) {
+	var vertices = new Float32Array(displayHeight * displayWidth * 8), len = 0;
+	var pixelWidth = (1 / displayWidth) * 2;
+	var pixelHeight = (1 / displayHeight) * 2;
+	var pixelWidthXj, pixelHeightXi;
+	for (var i = 0; i < 224; i++) {
 		pixelHeightXi = pixelHeight * i;
-		for (let j = 0; j < 256; j++) {
+		for (var j = 0; j < 256; j++) {
 			pixelWidthXj = pixelWidth * j;
 			vertices[len++] = -1 + pixelWidth + pixelWidthXj;
 			vertices[len++] = 1 - pixelHeightXi;
@@ -94,7 +95,7 @@ function initBuffers () {
 	gl.vertexAttribPointer(shaderProgram.vertexPositionAttribute, pixelPositionItemSize, gl.FLOAT, false, 0, 0);
 }
 
-let displayColorBuffer = new Float32Array(pixelColorNumberOfItems);
+var displayColorBuffer = new Float32Array(pixelColorNumberOfItems);
 
 function turnPixelOn (position) {
 	displayColorBuffer[position] = displayColorBuffer[position + 1] = displayColorBuffer[position + 2] = displayColorBuffer[position + 3] = 1;
@@ -105,12 +106,12 @@ function turnPixelOff (position) {
 }
 
 function setMatrix () {
-	let matrixOffset, ramOffset;
-	for (let i = 0; i < displayHeight; i++) {
+	var matrixOffset, ramOffset;
+	for (var i = 0; i < displayHeight; i++) {
 		matrixOffset = i * displayWidth;
 		ramOffset = i * 32;
-		for (let j = 0; j < 32; j++) {
-			for (let k = 0; k < 8; k++) {
+		for (var j = 0; j < 32; j++) {
+			for (var k = 0; k < 8; k++) {
 				if (CPU.RAM[0x2400 + ramOffset] & (1 << k)) {
 					turnPixelOn((matrixOffset + k)  * 4);
 				} else {

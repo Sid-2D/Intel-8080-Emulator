@@ -4,7 +4,7 @@ var CPU;
 function initCPU () {
 	CPU = loadCPU();
 	setOpcodes();
-	loadProgram();
+	loadInvaders();
 }
 
 // Globals for referring to registers
@@ -43,7 +43,7 @@ function loadCPU () {
 
 function resetCPU () {
 	CPU = loadCPU();
-	loadProgram();
+	loadInvaders();
 }
 
 function loadProgram () {
@@ -55,12 +55,12 @@ function loadProgram () {
 		for (var i = 0; i < program.length; i++) {
 			CPU.RAM[i] = program[i];
 		}
-		start();
+		runProgram();
 	};
 	xhr.send();
 }
 
-function start () {
+function runProgram () {
 	initDisplay();
 	requestAnimationFrame(function update() {
 		processOpcode();
@@ -118,7 +118,7 @@ function setOpcodes () {
 	};
 	CPU.Instructions[0x06] = function () {
 		// MVI B, D8
-		CPU.registers[B] = CPU.RAM[programCounter++];
+		CPU.registers[B] = CPU.RAM[CPU.programCounter++];
 		syncPairWithRegister(B, BC);
 	};
 	CPU.Instructions[0x07] = function () {
@@ -401,6 +401,7 @@ function setOpcodes () {
 	CPU.Instructions[0x3a] = function () {
 		// LDA adr
 		var address = getAddress();
+		console.log(CPU.RAM[address]);
 		CPU.registers[A] = CPU.RAM[address];
 	};
 	CPU.Instructions[0x3b] = function () {
@@ -1362,7 +1363,7 @@ function setOpcodes () {
 	CPU.Instructions[0xc2] = function () {
 		// JNZ adr
 		var address = getAddress();
-		if (CPU.flags[Z]) {
+		if (!CPU.flags[Z]) {
 			CPU.programCounter = address;
 		}
 	};
@@ -1808,7 +1809,7 @@ function setOpcodes () {
 function getAddress () {
 	var byte2 = CPU.RAM[CPU.programCounter++];
 	var byte3 = CPU.RAM[CPU.programCounter++];
-	return ((byte3 << 8) | byte2);
+	return (byte3 << 8) | byte2;
 }
 
 function syncPairWithRegister (r, p) {
@@ -1821,7 +1822,7 @@ function syncRegisterWithPair (r, p) {
 }
 
 function setFlagZ (result) {
-	if (result == 0) {
+	if (result === 0) {
 		return CPU.flags[Z] = 1;
 	}
 	CPU.flags[Z] = 0;
@@ -1831,7 +1832,7 @@ function setFlagS (result) {
 	if (0x80 & result) {
 		return CPU.flags[S] = 1;
 	}
-	CPU.flags[S] = 1;
+	CPU.flags[S] = 0;
 }
 
 function setFlagP (result) {
@@ -1895,12 +1896,13 @@ function setFlagACminus (before, value) {
 }
 
 function wait () {
-	CPU.State.WAIT = true;
+	CPU.State.HLTA = true;
 }
 
 function processOpcode () {
 	// FETCH
 	var opcode = CPU.RAM[CPU.programCounter++];
 	console.log("Processing OpCode: " + opcode.toString(16));
+	// console.log("Program Counter: " + CPU.programCounter);
 	CPU.Instructions[opcode]();
 }

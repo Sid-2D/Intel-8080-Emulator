@@ -4,9 +4,10 @@
 	<title>Intel 8080 Emulator</title>
 	<script type = "text/javascript" src = "js/8080.js"></script>
 	<script type = "text/javascript" src = "js/Display.js"></script>
+	<script type = "text/javascript" src = "js/Loader.js"></script>
 	<script type = "text/javascript" src = "js/Keyboard.js"></script>
 	<script type = "text/javascript" src = "js/Invader.js"></script>
-	<script id = "vertex" type = "vertex">
+	<script id = "vertex" type = "vertexShader">
 		attribute vec2 vertexPositions;
 		attribute float vertexColor;
 		varying vec4 vColor;
@@ -18,7 +19,7 @@
 			vColor = vec4(vertexColor, vertexColor, vertexColor, 1.0);
 		}
 	</script>
-	<script id = "fragment" type = "fragment">
+	<script id = "fragment" type = "fragmentShader">
 		precision mediump float;
 		varying vec4 vColor;
 		void main () {
@@ -26,7 +27,7 @@
 		}
 	</script>
 </head>
-<body onload = "initCPU();">
-	<p id = "Display"></p>
+<body onload = "initCPU();" style = "background-color: #333">
+	<canvas id = "Display" style = "position: absolute; top: 0; left: 0; right: 0; bottom: 0; margin: auto;"></canvas>
 </body>
 </html>

@@ -61,10 +61,12 @@ function loadProgram () {
 }
 
 function start () {
+	initDisplay();
 	requestAnimationFrame(function update() {
 		processOpcode();
 		if (!CPU.State.HLTA) {
 			requestAnimationFrame(update);
+			drawScene();
 		} 
 	});
 }

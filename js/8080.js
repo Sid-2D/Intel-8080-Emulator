@@ -29,7 +29,6 @@ function loadCPU () {
 		flags : new Uint8Array(5),
 		// RAM
 		RAM : new Uint8Array(65536),
-		// Wait - Used for memory sync
 		State : {
 			WAIT : false,
 			HLDA : false,
@@ -48,7 +47,7 @@ function resetCPU () {
 
 function loadProgram () {
 	var xhr = new XMLHttpRequest;
-	xhr.open("GET", "ROM/HELLOWORLD", true);
+	xhr.open("GET", "ROM/DEBUG", true);
 	xhr.responseType = "arraybuffer";
 	xhr.onload = function () {
 		var program = new Uint8Array(xhr.response);
@@ -60,21 +59,33 @@ function loadProgram () {
 	xhr.send();
 }
 
+var turn = 1;
 function runProgram () {
 	initDisplay();
 	requestAnimationFrame(function update() {
-		processOpcode();
-		if (!CPU.State.HLTA) {
-			requestAnimationFrame(update);
-			drawScene();
-		} 
+		for (var i = 0; i < 100; i++) {
+			if (!CPU.State.HLTA) {
+				processOpcode();
+				if (CPU.State.INTE) {
+					if (i == 50) {
+						callInterrupt(0x08);		
+					}
+					if (i == 99) {
+						callInterrupt(0x10);
+					}
+				}
+			}
+		}
+		drawScene();
+		requestAnimationFrame(update);
 	});
 }
 
 function setOpcodes () {
 	for (var i = 0; i < 256; i++) {
 		CPU.Instructions[i] = function () {
-			console.log("\tINVALID OPCODE.");
+			console.log("\tINVALID OPCODE:" + i);
+			console.log("\tProgram Counter:" + CPU.programCounter);
 			wait();
 		}
 	}
@@ -275,7 +286,7 @@ function setOpcodes () {
 	};
 	CPU.Instructions[0x22] = function () {
 		// SHLD adr
-		var address = getAddress()
+		var address = getAddress();
 		CPU.RAM[address] = CPU.registers[L];
 		CPU.RAM[address + 1] = CPU.registers[H];
 	};
@@ -401,7 +412,6 @@ function setOpcodes () {
 	CPU.Instructions[0x3a] = function () {
 		// LDA adr
 		var address = getAddress();
-		console.log(CPU.RAM[address]);
 		CPU.registers[A] = CPU.RAM[address];
 	};
 	CPU.Instructions[0x3b] = function () {
@@ -1486,7 +1496,7 @@ function setOpcodes () {
 		// OUT D8
 		var port = CPU.RAM[CPU.programCounter++];
 		console.log("Sending output to port: " + port);
-		document.getElementById('Display').innerHTML += String.fromCharCode(CPU.registers[A]);
+		// document.getElementById('Display').innerHTML += String.fromCharCode(CPU.registers[A]);
 		invaderOUT(port);
 	};
 	CPU.Instructions[0xd4] = function () {
@@ -1654,14 +1664,11 @@ function setOpcodes () {
 	};
 	CPU.Instructions[0xeb] = function () {
 		// XCHG
-		var temp = CPU.registers[H];
-		CPU.registers[H] = CPU.registers[D];
-		CPU.registers[D] = temp;
-		temp = CPU.registers[L];
-		CPU.registers[L] = CPU.registers[E];
-		CPU.registers[E] = temp;
-		syncPairWithRegister(H, HL);
-		syncPairWithRegister(D, DE);
+		var temp = CPU.registerPairs[HL];
+		CPU.registerPairs[HL] = CPU.registerPairs[DE];
+		CPU.registerPairs[DE] = temp;
+		syncRegisterWithPair(H, HL);
+		syncRegisterWithPair(D, DE);
 	};
 	CPU.Instructions[0xec] = function () {
 		// CPE adr
@@ -1791,11 +1798,11 @@ function setOpcodes () {
 	CPU.Instructions[0xfe] = function () {
 		// CPI D8
 		var value = CPU.RAM[CPU.programCounter++];
-		if (CPU.registers[A] == value) {
-			CPU.flags[Z] = 1;
-		} else if (CPU.registers[A] < value) {
-			CPU.flags[CY] = 1;
-		}
+		var result = CPU.registers[A] - value;
+		setFlagZ(result);
+		setFlagP(result);
+		setFlagS(result);
+		setFlagCY(result, result & 0xff);
 	};
 	CPU.Instructions[0xff] = function () {
 		// RST 7
@@ -1822,17 +1829,11 @@ function syncRegisterWithPair (r, p) {
 }
 
 function setFlagZ (result) {
-	if (result === 0) {
-		return CPU.flags[Z] = 1;
-	}
-	CPU.flags[Z] = 0;
+	CPU.flags[Z] = +(result === 0);
 }
 
 function setFlagS (result) {
-	if (0x80 & result) {
-		return CPU.flags[S] = 1;
-	}
-	CPU.flags[S] = 0;
+	CPU.flags[S] = (result & 0x80) >> 7;
 }
 
 function setFlagP (result) {
@@ -1850,10 +1851,7 @@ function setFlagP (result) {
 }
 
 function setFlagCY (supposed, actual) {
-	if (supposed != actual) {
-		return CPU.flags[CY] = 1;
-	}
-	CPU.flags[CY] = 0;
+	CPU.flags[CY] = +(supposed != actual);
 }
 
 function setFlagACplus (before, value) {
@@ -1902,7 +1900,14 @@ function wait () {
 function processOpcode () {
 	// FETCH
 	var opcode = CPU.RAM[CPU.programCounter++];
-	console.log("Processing OpCode: " + opcode.toString(16));
+	// console.log("Processing OpCode: " + opcode.toString(16));
 	// console.log("Program Counter: " + CPU.programCounter);
 	CPU.Instructions[opcode]();
+}
+
+function callInterrupt (address) {
+	CPU.RAM[CPU.registerPairs[SP] - 1] = (CPU.programCounter & 0xff00) >> 8;
+	CPU.RAM[CPU.registerPairs[SP] - 2] = CPU.programCounter & 0x00ff;
+	CPU.registerPairs[SP] -= 2;
+	CPU.programCounter = address;
 }

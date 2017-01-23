@@ -66,15 +66,11 @@ function runProgram () {
 		for (var i = 0; i < 100; i++) {
 			if (!CPU.State.HLTA) {
 				processOpcode();
-				if (CPU.State.INTE) {
-					if (i == 50) {
-						callInterrupt(0x08);		
-					}
-					if (i == 99) {
-						callInterrupt(0x10);
-					}
-				}
 			}
+		}
+		if (CPU.State.INTE) {
+				callInterrupt(0x08);		
+				callInterrupt(0x10);
 		}
 		drawScene();
 		requestAnimationFrame(update);

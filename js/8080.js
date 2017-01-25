@@ -59,7 +59,10 @@ function loadProgram () {
 	xhr.send();
 }
 
-var turn = 1;
+var elapsedTime = 0;
+var frameCount = 0;
+var lastTime = 0;
+var drawCalls = 0;
 function runProgram () {
 	initDisplay();
 	requestAnimationFrame(function update() {
@@ -73,6 +76,15 @@ function runProgram () {
 				callInterrupt(0x10);
 		}
 		drawScene();
+		// drawCalls
+		var now = new Date().getTime();
+		elapsedTime = Number(now - lastTime);
+		drawCalls++;
+	    if (elapsedTime >= 1000) {
+	    	document.getElementById('DrawCalls').innerHTML = "Draw Calls: " + drawCalls;
+	    	drawCalls = 0;
+	    	lastTime = now;
+	    }
 		requestAnimationFrame(update);
 	});
 }

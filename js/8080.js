@@ -90,9 +90,9 @@ function runProgram () {
 }
 
 function setOpcodes () {
-	for (var i = 0; i < 256; i++) {
+	for (let i = 0; i < 256; i++) {
 		CPU.Instructions[i] = function () {
-			console.log("\tINVALID OPCODE:" + i);
+			console.log("\tINVALID OPCODE:" + i.toString(16));
 			console.log("\tProgram Counter:" + CPU.programCounter);
 			wait();
 		}
